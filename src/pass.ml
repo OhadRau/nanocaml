@@ -163,7 +163,9 @@ let pass_of_value_binding = function
                 | Ppat_var {txt = name} -> entry := Some name
                 | _ -> ()
               end in
-              List.iter (fun vb -> if List.exists (fun ({Asttypes.txt}, _) -> txt = "entry") vb.pvb_attributes then set_entry_name vb.pvb_pat.ppat_desc) vbs;
+              let is_entry vb =
+                List.exists (fun ({Asttypes.txt}, _) -> txt = "entry") vb.pvb_attributes in
+              List.iter (fun vb -> if is_entry vb then set_entry_name vb.pvb_pat.ppat_desc) vbs;
               vbs
             | _ -> []
           end in
@@ -180,14 +182,10 @@ let pass_of_value_binding = function
             (fun e' -> f {e with pexp_desc = Pexp_fun (lbl, dflt, pat, e')})
             body
 
-       | {pexp_desc = Pexp_let (recf, vbs, ({pexp_desc = Pexp_let _} as body))} as e
-       | ({pexp_desc = Pexp_let (recf, vbs, ({pexp_desc = Pexp_extension _} as body))} as e) ->
+       | {pexp_desc = Pexp_let (recf, vbs, ({pexp_desc = Pexp_extension _} as body))} as e ->
           extract_definitions
             (fun e' -> f {e with pexp_desc = Pexp_let (recf, vbs, e')})
             body
-
-       | {pexp_desc = Pexp_let (Recursive, vbs, body)} ->
-          f, vbs, body
 
        | {pexp_loc = loc} ->
           Location.raise_errorf ~loc
